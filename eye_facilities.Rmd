@@ -1,0 +1,33 @@
+---
+title: "Eye Health Facilities"
+author: "Kevin Tang, John Nesemann, Ian McCormick"
+date: "6/30/2021"
+output: 
+  html_document:
+    toc: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+Load libraries
+```{r}
+library(tidyverse)            # for graphing and data cleaning
+library(lubridate)            # for dates
+theme_set(theme_minimal())    # set ggplot theme
+
+```
+
+Read data
+```{r}
+
+```
+
+## Eye health facilities in Malawi
+
+Blah blah blah
+```{r}
+
+```
+
