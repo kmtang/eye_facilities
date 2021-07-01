@@ -32,11 +32,15 @@ malawi <- st_read(here("data", "geo_shp", "mwi_admbnda_adm2_nso_20181016.shp"))
 
 ## Eye health facilities in Malawi
 
-Blah blah blah
+Eye health facilities are defined as public sector health facilities that have a permanent member of staff who is trained in ophthalmic care. Types of facilities can range from small health clinics to central hospitals. 
 ```{r}
 ggplot() +
   geom_sf(data = malawi) +
-  geom_sf(data = eye_fac_sf_t, color = "red") +
+  geom_sf(data = eye_fac_sf_t, aes(color = cataract_surgical_services)) +
   theme_void() 
 ```
 
+## Questions
+(Kevin) What eye health outcomes are we interested in and what does the referral system look like in LMICs (i.e., Malawi)? For instance, in this Malawi example, we have a number of health facilities with trained ophthalmic staff but no capacity to perform cataract surgical services. So what kind of care can be expected in these facilities and at what point clinically are patients referred to larger health centers with more robust eye care infrastructure?
+
+(Kevin) Do surveillance and community case finding programs exist for eye diseases? There are two sides to geographic access to care: (1) individuals with disease who travel to seek care and (2) health systems that expend resources to find cases in communities. It would be good to get an idea about if/what kinds of programs exist for the latter.
