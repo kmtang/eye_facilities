@@ -10,29 +10,33 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 ```
+## Set up
 
 Load libraries
 ```{r}
-library(tidyverse)            # for graphing and data cleaning
+library(tidyverse)            # for data cleaning and data viz
 library(lubridate)            # for dates
 library(here)                 # for directory management
-library(tmaptools)
-library(sf)
-library(tmap)
+library(sf)                   # for spatial data processing
 theme_set(theme_minimal())    # set ggplot theme
 ```
 
 Read data
 ```{r}
-here::here()
 eye_fac <- read.csv(here("data", "Malawi_facilities_public_gps.csv"))
-malawi <- st_read("/Users/kevintang/Library/Mobile Documents/com~apple~CloudDocs/Documents/r_projects/eye_facilities/data/geo_shp/mwi_admbnda_adm2_nso_20181016.shp")
+eye_fac_sf <- eye_fac %>% st_as_sf(coords = c("long", "lat"), crs=4326)
+eye_fac_sf_t <- st_transform(eye_fac_sf, crs=2163)
+
+malawi <- st_read(here("data", "geo_shp", "mwi_admbnda_adm2_nso_20181016.shp"))
 ```
 
 ## Eye health facilities in Malawi
 
 Blah blah blah
 ```{r}
-
+ggplot() +
+  geom_sf(data = malawi) +
+  geom_sf(data = eye_fac_sf_t, color = "red") +
+  theme_void() 
 ```
 
