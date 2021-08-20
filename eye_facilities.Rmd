@@ -50,3 +50,164 @@ Focusing on cataract we can link services to cataract vision impairment and effe
 (Kevin) Do surveillance and community case finding programs exist for eye diseases? There are two sides to geographic access to care: (1) individuals with disease who travel to seek care and (2) health systems that expend resources to find cases in communities. It would be good to get an idea about if/what kinds of programs exist for the latter.
 (Ian) On case finding: broadly yes, there will be community cataract screening +/- cataract surgical camps. I will ask Shaffi in Malawi for an overview of current practice.
 Generally, the trend is to move away from delivering cataract surgery in camps as outcomes may be worse and follow-up care less structured, so even where the health system identifies people as cataract vision impaired in the community those people may well be travelling to access surgery at secondary centres. Or not… depending on their motivation, financial means and physical ability to make the journey.
+
+##Friction Surface
+
+Download Packages
+```{r}
+## Packages
+library(gdistance)
+library(sp)
+library(abind)
+library(rje)
+library(ggplot2)
+library(malariaAtlas)
+## Plot defaults
+theme_set(theme_minimal(base_size=14))
+```
+
+Clip friction surface for Malawi
+```{r}
+malawi_clip <- readRDS((here("data", "geo_shp", "gadm36_MWI_0_sp.rds")))
+plot(malawi_clip, main="Shape for Clipping")
+
+friction <- malariaAtlas::getRaster(
+                      surface = "A global friction surface enumerating land-based travel speed for a nominal year 2015",
+                      shp = malawi_clip)
+malariaAtlas::autoplot_MAPraster(friction)
+```
+
+Convert friction surface to a transition matrix
+```{r}
+T <- gdistance::transition(friction, function(x) 1/mean(x), 8) 
+T.GC <- gdistance::geoCorrection(T)   
+```
+
+Point locations (Eye care facilities)
+```{r}
+## Point locations
+point.locations <- eye_fac %>% dplyr::select(long, lat, name, cataract_surgical_services)
+names(point.locations) <- c("X_COORD", "Y_COORD", "name", "cataract_surgical_services")
+
+coordinates(point.locations) <- ~ X_COORD + Y_COORD #Keep only point coordinates within the shapefile bounds
+
+points <- as.matrix(point.locations@coords) #convert to matrix of lat-longs for accessibility algorithm
+```
+
+Final raster model
+```{r}
+access.raster <- gdistance::accCost(T.GC, points) #run an “accumulated cost surface” algorithm to calculate travel time to closest facility
+
+p <- malariaAtlas::autoplot_MAPraster(access.raster, 
+                        shp_df=malawi_clip, printed=F)
+
+full_plot <- p[[1]] + geom_point(data=data.frame(point.locations@coords), 
+                           aes(x=X_COORD, y=Y_COORD)) +
+scale_fill_gradientn(colors = rev(rje::cubeHelix(gamma=1.0, 
+                                                 start=1.5, 
+                                                 r=-1.0, 
+                                                 hue=1.5, 
+                                                 n=16)), 
+                     name="Minutes \n of Travel") + 
+ggtitle("Travel Time to Most Accessible Eye Care Facility") +
+theme(axis.text=element_blank(),
+      panel.border=element_rect(fill=NA, color="white"))
+
+print(full_plot)
+```
+
+
+```{r}
+# Accessibility Mapping in R
+# 
+# Dan Weiss
+# Telethon Kids Institute, Perth 
+# Malaria Atlas Project, University of Oxford
+# 2020-08-06
+#
+# This script requires the gdistance package (van Etten, J. R Package gdistance: Distances and Routes on Geographical Grids. Journal of Statistical Software 76, 1-21)
+# https://cran.r-project.org/web/packages/gdistance/index.html
+#
+# This script requires the two user supplied datasets:
+# (a) A friction surface, two of which are available here: https://malariaatlas.org/research-project/accessibility_to_healthcare/
+# (b) A user-supplied .csv of points (i.e., known geographic coordinates) 
+#
+# Notes:
+# (a) All file paths and names should be changed as needed.
+# (b) Important runtime details can be found in the comments.
+# (c) This script is suitable only for analyses of moderately sized areas (e.g., up to 10 million km^2 in lower latitude settings - GLOBAL RUNS WILL NOT WORK).
+#     We recommend using Google Earth Engine for larger areas, with the exception of high-latitude areas where custom approaches are typically required.
+#
+# Citations: 
+#
+# D. J. Weiss, A. Nelson, C. A. Vargas-Ruiz, K. Gligoric, S. Bavadekar, E. Gabrilovich, A. Bertozzi-Villa, J. Rozier, H. S. Gibson, T. Shekel, C. Kamath, A. Lieber, K. Schulman,
+# Y. Shao, V. Qarkaxhija, A. K. Nandi, S. H. Keddie, S. Rumisha, P. Amratia, R. Arambepola, E. G. Chestnutt, J. J. Millar, T. L. Symons, E. Cameron, K. E. Battle, S. Bhatt, 
+# and P. W. Gething. Global maps of travel time to healthcare facilities. (2020) Nature Medicine.
+#
+# A. Nelson, D. J. Weiss, J. van Etten, A. Cattaneo, T. S. McMenomy,and J. Koo. A suite of global accessibility indicators. (2019). Nature Scientific Data. doi.org/10.1038/s41597-019-0265-5
+#
+# D. J. Weiss, A. Nelson, H.S. Gibson, W. Temperley, S. Peedell, A. Lieber, M. Hancher, E. Poyart, S. Belchior, N. Fullman, B. Mappin, U. Dalrymple, J. Rozier, 
+# T.C.D. Lucas, R.E. Howes, L.S. Tusting, S.Y. Kang, E. Cameron, D. Bisanzio, K.E. Battle, S. Bhatt, and P.W. Gething. A global map of travel time to cities to assess 
+# inequalities in accessibility in 2015. (2018). Nature. doi:10.1038/nature25181.
+# 
+
+## Required Packages
+require(gdistance)
+
+# User Defined Variables - used if clipping from the global layer, if no clipping is needed, see lines 66-67 (currently commented out).
+# This could also be accomplished by importing a shapefile (for example) 
+# Geographic Coordinates (WGS84)
+left   <- -2.0
+right  <- 0.0
+bottom <- 50.0
+top    <- 52.0
+transition.matrix.exists.flag <- 0 # if the geo-corrected graph has already been made, this can save time.  Uses the same T.GC.filename as specified using the T.GC.filename variable.
+
+# Input Files
+# Note: the alternate, 'walking_only' friction surface is named friction_surface_2019_v51_walking_only.tif
+friction.surface.filename <- 'E:\\accessibility\\friction_surface_2019_v51.tif.tif'
+point.filename <- 'E:\\accessibility\\points.csv' # Just 2 columns.  Structured as [X_COORD, Y_COORD] aka [LONG, LAT].  Use a header.
+
+# Output Files
+T.filename <- 'E:\\accessibility\\study.area.T.rds'
+T.GC.filename <- 'E:\\accessibility\\study.area.T.GC.rds'
+output.filename <- 'E:\\accessibility\\study.area.accessibility.tif'
+
+# Read in the points table
+points <- read.csv(file = point.filename)
+
+# Fetch the number of points
+temp <- dim(points)
+n.points <- temp[1]
+
+#  Define the spatial template
+friction <- raster(friction.surface.filename)
+fs1 <- crop(friction, extent(left, right, bottom, top))
+# Use the following line instead of the preceding 2 if clipping is not needed (i.e., to run globally), but be warned that trying this will far exceed the computational capacity available to most users.
+# fs1 <- raster(friction.surface.filename) 
+
+# Make the graph and the geocorrected version of the graph (or read in the latter).
+if (transition.matrix.exists.flag == 1) {
+  # Read in the transition matrix object if it has been pre-computed
+  T.GC <- readRDS(T.GC.filename)
+} else {
+  # Make and geocorrect the transition matrix (i.e., the graph)
+  T <- transition(fs1, function(x) 1/mean(x), 8) # RAM intensive, can be very slow for large areas
+  saveRDS(T, T.filename)
+  T.GC <- geoCorrection(T)                    
+  saveRDS(T.GC, T.GC.filename)
+}
+
+# Convert the points into a matrix
+xy.data.frame <- data.frame()
+xy.data.frame[1:n.points,1] <- points[,1]
+xy.data.frame[1:n.points,2] <- points[,2]
+xy.matrix <- as.matrix(xy.data.frame)
+
+# Run the accumulated cost algorithm to make the final output map. This can be quite slow (potentially hours).
+temp.raster <- accCost(T.GC, xy.matrix)
+
+# Write the resulting raster
+writeRaster(temp.raster, output.filename)
+```
+
