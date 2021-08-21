@@ -51,7 +51,7 @@ Focusing on cataract we can link services to cataract vision impairment and effe
 (Ian) On case finding: broadly yes, there will be community cataract screening +/- cataract surgical camps. I will ask Shaffi in Malawi for an overview of current practice.
 Generally, the trend is to move away from delivering cataract surgery in camps as outcomes may be worse and follow-up care less structured, so even where the health system identifies people as cataract vision impaired in the community those people may well be travelling to access surgery at secondary centres. Or not… depending on their motivation, financial means and physical ability to make the journey.
 
-##Friction Surface
+## Prepare Friction Surface
 
 Download Packages
 ```{r}
@@ -83,25 +83,53 @@ T <- gdistance::transition(friction, function(x) 1/mean(x), 8)
 T.GC <- gdistance::geoCorrection(T)   
 ```
 
-Point locations (Eye care facilities)
+##Prepare Point Locations
+
+All eye care facilities
 ```{r}
 ## Point locations
-point.locations <- eye_fac %>% dplyr::select(long, lat, name, cataract_surgical_services)
-names(point.locations) <- c("X_COORD", "Y_COORD", "name", "cataract_surgical_services")
+point.locations.all <- eye_fac %>% dplyr::select(long, lat, name, cataract_surgical_services)
+names(point.locations.all) <- c("X_COORD", "Y_COORD", "name", "cataract_surgical_services")
 
-coordinates(point.locations) <- ~ X_COORD + Y_COORD #Keep only point coordinates within the shapefile bounds
+coordinates(point.locations.all) <- ~ X_COORD + Y_COORD #Keep only point coordinates within the shapefile bounds
 
-points <- as.matrix(point.locations@coords) #convert to matrix of lat-longs for accessibility algorithm
+points.all <- as.matrix(point.locations.all@coords) #convert to matrix of lat-longs for accessibility algorithm
 ```
 
-Final raster model
+Eye care facilities with cataract surgery capacity
 ```{r}
-access.raster <- gdistance::accCost(T.GC, points) #run an “accumulated cost surface” algorithm to calculate travel time to closest facility
+## Point locations
+point.locations.surgery <- eye_fac %>% dplyr::select(long, lat, name, cataract_surgical_services)
+names(point.locations.surgery) <- c("X_COORD", "Y_COORD", "name", "cataract_surgical_services")
+point.locations.surgery <- point.locations.surgery %>% filter(cataract_surgical_services!="None")
 
-p <- malariaAtlas::autoplot_MAPraster(access.raster, 
+coordinates(point.locations.surgery) <- ~ X_COORD + Y_COORD #Keep only point coordinates within the shapefile bounds
+
+points.surgery <- as.matrix(point.locations.surgery@coords) #convert to matrix of lat-longs for accessibility algorithm
+```
+
+Eye care facilities with cataract surgery capacity, permanent only
+```{r}
+## Point locations
+point.locations.surgery.perm <- eye_fac %>% dplyr::select(long, lat, name, cataract_surgical_services)
+names(point.locations.surgery.perm) <- c("X_COORD", "Y_COORD", "name", "cataract_surgical_services")
+point.locations.surgery.perm <- point.locations.surgery.perm %>% filter(cataract_surgical_services=="Permanent")
+
+coordinates(point.locations.surgery.perm) <- ~ X_COORD + Y_COORD #Keep only point coordinates within the shapefile bounds
+
+points.surgery.perm <- as.matrix(point.locations.surgery.perm@coords) #convert to matrix of lat-longs for accessibility algorithm
+```
+
+##Accumulated cost surface algorithm
+
+All eye care facilities
+```{r}
+access.raster.all <- gdistance::accCost(T.GC, points.all) #run an “accumulated cost surface” algorithm to calculate travel time to closest facility
+
+p <- malariaAtlas::autoplot_MAPraster(access.raster.all, 
                         shp_df=malawi_clip, printed=F)
 
-full_plot <- p[[1]] + geom_point(data=data.frame(point.locations@coords), 
+full_plot <- p[[1]] + geom_point(data=data.frame(point.locations.all@coords), 
                            aes(x=X_COORD, y=Y_COORD)) +
 scale_fill_gradientn(colors = rev(rje::cubeHelix(gamma=1.0, 
                                                  start=1.5, 
@@ -116,3 +144,46 @@ theme(axis.text=element_blank(),
 print(full_plot)
 ```
 
+Eye care facilities with cataract surgery capacity
+```{r}
+access.raster.surgery <- gdistance::accCost(T.GC, points.surgery) #run an “accumulated cost surface” algorithm to calculate travel time to closest facility
+
+p <- malariaAtlas::autoplot_MAPraster(access.raster.surgery, 
+                        shp_df=malawi_clip, printed=F)
+
+full_plot <- p[[1]] + geom_point(data=data.frame(point.locations.surgery@coords), 
+                           aes(x=X_COORD, y=Y_COORD)) +
+scale_fill_gradientn(colors = rev(rje::cubeHelix(gamma=1.0, 
+                                                 start=1.5, 
+                                                 r=-1.0, 
+                                                 hue=1.5, 
+                                                 n=16)), 
+                     name="Minutes \n of Travel") + 
+ggtitle("Travel Time to Most Accessible Eye Care Facility") +
+theme(axis.text=element_blank(),
+      panel.border=element_rect(fill=NA, color="white"))
+
+print(full_plot)
+```
+
+Eye care facilities with cataract surgery capacity, permanent only
+```{r}
+access.raster.surgery.perm <- gdistance::accCost(T.GC, points.surgery.perm) #run an “accumulated cost surface” algorithm to calculate travel time to closest facility
+
+p <- malariaAtlas::autoplot_MAPraster(access.raster.surgery.perm, 
+                        shp_df=malawi_clip, printed=F)
+
+full_plot <- p[[1]] + geom_point(data=data.frame(point.locations.surgery.perm@coords), 
+                           aes(x=X_COORD, y=Y_COORD)) +
+scale_fill_gradientn(colors = rev(rje::cubeHelix(gamma=1.0, 
+                                                 start=1.5, 
+                                                 r=-1.0, 
+                                                 hue=1.5, 
+                                                 n=16)), 
+                     name="Minutes \n of Travel") + 
+ggtitle("Travel Time to Most Accessible Eye Care Facility") +
+theme(axis.text=element_blank(),
+      panel.border=element_rect(fill=NA, color="white"))
+
+print(full_plot)
+```
