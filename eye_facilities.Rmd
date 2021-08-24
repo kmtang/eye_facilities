@@ -114,20 +114,18 @@ All eye care facilities
 ```{r}
 access.raster.all <- gdistance::accCost(T.GC, points.all) #run an “accumulated cost surface” algorithm to calculate travel time to closest facility
 
-p <- malariaAtlas::autoplot_MAPraster(access.raster.all, 
-                        shp_df=malawi_clip, printed=F)
+p <- malariaAtlas::autoplot_MAPraster(access.raster.all, shp_df=malawi_clip, printed=F)
 
-full_plot <- p[[1]] + geom_point(data=data.frame(point.locations.all@coords), 
-                           aes(x=X_COORD, y=Y_COORD)) +
-scale_fill_gradientn(colors = rev(rje::cubeHelix(gamma=1.0, 
+full_plot <- p[[1]] + 
+  geom_point(data=data.frame(point.locations.all@coords), aes(x=X_COORD, y=Y_COORD)) +
+  scale_fill_gradientn(colors = rev(rje::cubeHelix(gamma=1.0, 
                                                  start=1.5, 
                                                  r=-1.0, 
                                                  hue=1.5, 
                                                  n=16)), 
                      name="Minutes \n of Travel") + 
-ggtitle("Travel Time to Most Accessible Eye Care Facility") +
-theme(axis.text=element_blank(),
-      panel.border=element_rect(fill=NA, color="white"))
+  ggtitle("Travel Time to Most Accessible Eye Care Facility") +
+  theme(axis.text=element_blank(), panel.border=element_rect(fill=NA, color="white"))
 
 print(full_plot)
 ```
@@ -136,20 +134,19 @@ Eye care facilities with cataract surgery capacity
 ```{r}
 access.raster.surgery <- gdistance::accCost(T.GC, points.surgery) #run an “accumulated cost surface” algorithm to calculate travel time to closest facility
 
-p <- malariaAtlas::autoplot_MAPraster(access.raster.surgery, 
-                        shp_df=malawi_clip, printed=F)
+p <- malariaAtlas::autoplot_MAPraster(access.raster.surgery, shp_df=malawi_clip, printed=F)
 
-full_plot <- p[[1]] + geom_point(data=data.frame(point.locations.surgery@coords), 
-                           aes(x=X_COORD, y=Y_COORD)) +
-scale_fill_gradientn(colors = rev(rje::cubeHelix(gamma=1.0, 
+full_plot <- p[[1]] + 
+  geom_point(data=data.frame(point.locations.surgery@coords), aes(x=X_COORD, y=Y_COORD)) +
+  geom_sf(data = malawi, fill = NA) +
+  scale_fill_gradientn(colors = rev(rje::cubeHelix(gamma=1.0, 
                                                  start=1.5, 
                                                  r=-1.0, 
                                                  hue=1.5, 
                                                  n=16)), 
                      name="Minutes \n of Travel") + 
-ggtitle("Travel Time to Most Accessible Eye Care Facility") +
-theme(axis.text=element_blank(),
-      panel.border=element_rect(fill=NA, color="white"))
+  ggtitle("Travel Time to Most Accessible Eye Care Facility") +
+  theme(axis.text=element_blank(), panel.border=element_rect(fill=NA, color="white"))
 
 print(full_plot)
 ```
@@ -158,20 +155,19 @@ Eye care facilities with cataract surgery capacity, permanent only
 ```{r}
 access.raster.surgery.perm <- gdistance::accCost(T.GC, points.surgery.perm) #run an “accumulated cost surface” algorithm to calculate travel time to closest facility
 
-p <- malariaAtlas::autoplot_MAPraster(access.raster.surgery.perm, 
-                        shp_df=malawi_clip, printed=F)
+p <- malariaAtlas::autoplot_MAPraster(access.raster.surgery.perm, shp_df=malawi_clip, printed=F)
 
-full_plot <- p[[1]] + geom_point(data=data.frame(point.locations.surgery.perm@coords), 
-                           aes(x=X_COORD, y=Y_COORD)) +
-scale_fill_gradientn(colors = rev(rje::cubeHelix(gamma=1.0, 
-                                                 start=1.5, 
-                                                 r=-1.0, 
-                                                 hue=1.5, 
-                                                 n=16)), 
-                     name="Minutes \n of Travel") + 
-ggtitle("Travel Time to Most Accessible Eye Care Facility") +
-theme(axis.text=element_blank(),
-      panel.border=element_rect(fill=NA, color="white"))
+full_plot <- p[[1]] + 
+  geom_point(data = data.frame(point.locations.surgery.perm@coords), aes(x = X_COORD, y = Y_COORD)) +
+  geom_sf(data = malawi, fill = NA) +
+  scale_fill_gradientn(colors = rev(rje::cubeHelix(gamma = 1.0, 
+                                                 start = 1.5, 
+                                                 r = -1.0, 
+                                                 hue = 1.5, 
+                                                 n = 16)), 
+                     name = "Minutes \n of Travel") + 
+  ggtitle("Travel Time to Most Accessible Eye Care Facility") +
+  theme(axis.text = element_blank(), panel.border = element_rect(fill = NA, color = "white"))
 
 print(full_plot)
 ```
